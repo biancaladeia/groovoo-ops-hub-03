@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NavItem {
   icon: typeof LayoutDashboard;
@@ -38,11 +39,12 @@ const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { signOut, profile, role } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
+  const handleLogout = async () => {
+    await signOut();
     toast.success('Logged out successfully');
-    navigate('/');
+    navigate('/login');
   };
 
   return (

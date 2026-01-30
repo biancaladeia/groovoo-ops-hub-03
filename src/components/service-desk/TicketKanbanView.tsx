@@ -85,11 +85,11 @@ const TicketCard = ({
   index: number;
   onStatusChange: (ticketId: string, status: TicketStatus) => void;
 }) => {
-  const timeOpen = calculateTimeOpen(ticket.createdAt);
+  const timeOpen = calculateTimeOpen(new Date(ticket.created_at));
   const isOverdue =
     ticket.status !== 'Resolved' &&
     ticket.status !== 'Closed' &&
-    Date.now() - new Date(ticket.createdAt).getTime() > 24 * 60 * 60 * 1000;
+    Date.now() - new Date(ticket.created_at).getTime() > 24 * 60 * 60 * 1000;
 
   return (
     <motion.div
@@ -102,7 +102,7 @@ const TicketCard = ({
       {/* Header */}
       <div className="flex items-start justify-between gap-2 mb-2">
         <code className="text-xs bg-background/50 px-1.5 py-0.5 rounded">
-          {ticket.ticketId.split('-').slice(0, 2).join('-')}
+          {ticket.ticket_number.split('-').slice(0, 2).join('-')}
         </code>
         <Badge variant="outline" className={`text-xs ${priorityConfig[ticket.priority]}`}>
           {ticket.priority}
@@ -118,7 +118,7 @@ const TicketCard = ({
       {/* Footer */}
       <div className="flex items-center justify-between text-xs">
         <div className="flex items-center gap-2">
-          {ticket.type === 'User' ? (
+          {ticket.ticket_type === 'B2C' ? (
             <User className="w-3 h-3 text-info" />
           ) : (
             <Building2 className="w-3 h-3 text-primary" />
@@ -137,16 +137,6 @@ const TicketCard = ({
           <span className="font-mono">{timeOpen}</span>
         </div>
       </div>
-
-      {/* Assignee */}
-      {ticket.assignee && (
-        <div className="mt-2 pt-2 border-t border-border/50 flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-xs text-primary">
-            {ticket.assignee.charAt(0)}
-          </div>
-          <span className="text-xs text-muted-foreground">{ticket.assignee}</span>
-        </div>
-      )}
     </motion.div>
   );
 };
