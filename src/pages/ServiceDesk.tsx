@@ -25,6 +25,7 @@ import {
 import { Ticket, TicketStatus, ServiceDeskView, B2C_CATEGORIES, B2B_CATEGORIES } from '@/types';
 import TicketListView from '@/components/service-desk/TicketListView';
 import TicketKanbanView from '@/components/service-desk/TicketKanbanView';
+import { TicketDialog, TicketDialogMode } from '@/components/service-desk/TicketDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -39,6 +40,11 @@ const ServiceDesk = () => {
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [, setRefreshKey] = useState(0);
+  
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<TicketDialogMode>('create');
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
 
   useEffect(() => {
     fetchTickets();
@@ -112,6 +118,12 @@ const ServiceDesk = () => {
     }
   };
 
+  const openCreateDialog = () => {
+    setSelectedTicket(null);
+    setDialogMode('create');
+    setDialogOpen(true);
+  };
+
   // Stats
   const openCount = tickets.filter((t) => t.status === 'Open').length;
   const inProgressCount = tickets.filter((t) => t.status === 'In Progress').length;
@@ -134,7 +146,10 @@ const ServiceDesk = () => {
           <p className="text-sm text-muted-foreground">Manage support tickets and requests</p>
         </div>
         {isAdmin && (
-          <Button className="bg-groovoo-gradient hover:opacity-90 glow-primary text-white">
+          <Button 
+            className="bg-groovoo-gradient hover:opacity-90 glow-primary text-white"
+            onClick={openCreateDialog}
+          >
             <Plus className="w-4 h-4 mr-2" />
             New Ticket
           </Button>
@@ -302,6 +317,15 @@ const ServiceDesk = () => {
           <p>No tickets found. {isAdmin && 'Create your first ticket to get started.'}</p>
         </div>
       )}
+
+      {/* Ticket Dialog */}
+      <TicketDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        mode={dialogMode}
+        ticket={selectedTicket}
+        onSuccess={fetchTickets}
+      />
     </div>
   );
 };

@@ -3,13 +3,15 @@ import { motion } from 'framer-motion';
 import {
   Plus,
   Search,
-  Filter,
   MoreHorizontal,
   CheckCircle2,
   XCircle,
   Clock,
   AlertTriangle,
   Loader2,
+  Eye,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +31,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   Select,
@@ -37,11 +40,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Event, EventStatus, Gateway } from '@/types';
+import { Event, EventStatus } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { EventDialog, EventDialogMode } from '@/components/events/EventDialog';
 
 const statusConfig: Record<EventStatus, { color: string; icon: typeof CheckCircle2 }> = {
   Available: { color: 'status-available', icon: CheckCircle2 },
@@ -57,6 +71,13 @@ const EventsDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [gatewayFilter, setGatewayFilter] = useState<string>('all');
+  
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<EventDialogMode>('create');
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
 
   useEffect(() => {
     fetchEvents();
@@ -138,6 +159,51 @@ const EventsDashboard = () => {
     }
   };
 
+  const openCreateDialog = () => {
+    setSelectedEvent(null);
+    setDialogMode('create');
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (event: Event) => {
+    setSelectedEvent(event);
+    setDialogMode('edit');
+    setDialogOpen(true);
+  };
+
+  const openViewDialog = (event: Event) => {
+    setSelectedEvent(event);
+    setDialogMode('view');
+    setDialogOpen(true);
+  };
+
+  const confirmDelete = (event: Event) => {
+    setEventToDelete(event);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!eventToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', eventToDelete.id);
+
+      if (error) throw error;
+
+      setEvents((prev) => prev.filter((e) => e.id !== eventToDelete.id));
+      toast.success('Event deleted successfully');
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast.error('Failed to delete event');
+    } finally {
+      setDeleteDialogOpen(false);
+      setEventToDelete(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -155,7 +221,10 @@ const EventsDashboard = () => {
           <p className="text-sm text-muted-foreground">Manage event lifecycles and payouts</p>
         </div>
         {isAdmin && (
-          <Button className="bg-groovoo-gradient hover:opacity-90 glow-primary text-white">
+          <Button 
+            className="bg-groovoo-gradient hover:opacity-90 glow-primary text-white"
+            onClick={openCreateDialog}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add Event
           </Button>
@@ -241,22 +310,35 @@ const EventsDashboard = () => {
                           </Badge>
                         </div>
                       </div>
-                      {isAdmin && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>Edit Event</DropdownMenuItem>
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
-                              Delete Event
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openViewDialog(event)}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          {isAdmin && (
+                            <>
+                              <DropdownMenuItem onClick={() => openEditDialog(event)}>
+                                <Pencil className="w-4 h-4 mr-2" />
+                                Edit Event
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => confirmDelete(event)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete Event
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-sm mb-3">
                       <div>
@@ -384,25 +466,37 @@ const EventsDashboard = () => {
                             className="data-[state=checked]:bg-success data-[state=checked]:border-success"
                           />
                         </TableCell>
-                        {isAdmin && (
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem>Edit Event</DropdownMenuItem>
-                                <DropdownMenuItem>View Details</DropdownMenuItem>
-                                <DropdownMenuItem>View Audit Log</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive">
-                                  Delete Event
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        )}
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openViewDialog(event)}>
+                                <Eye className="w-4 h-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              {isAdmin && (
+                                <>
+                                  <DropdownMenuItem onClick={() => openEditDialog(event)}>
+                                    <Pencil className="w-4 h-4 mr-2" />
+                                    Edit Event
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => confirmDelete(event)}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete Event
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
                       </TableRow>
                     );
                   })}
@@ -418,6 +512,36 @@ const EventsDashboard = () => {
           <p>No events found. {isAdmin && 'Create your first event to get started.'}</p>
         </div>
       )}
+
+      {/* Event Dialog */}
+      <EventDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        mode={dialogMode}
+        event={selectedEvent}
+        onSuccess={fetchEvents}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Event</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{eventToDelete?.event_name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

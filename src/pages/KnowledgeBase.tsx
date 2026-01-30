@@ -11,6 +11,7 @@ import {
   Folder,
   FileText,
   Loader2,
+  Pencil,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,7 @@ import { KnowledgeArticle } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { ArticleDialog, ArticleDialogMode } from '@/components/knowledge-base/ArticleDialog';
 
 const KnowledgeBase = () => {
   const { isAdmin } = useAuth();
@@ -31,6 +33,11 @@ const KnowledgeBase = () => {
   const [selectedCategory, setSelectedCategory] = useState('All Articles');
   const [selectedArticle, setSelectedArticle] = useState<KnowledgeArticle | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<ArticleDialogMode>('create');
+  const [editingArticle, setEditingArticle] = useState<KnowledgeArticle | null>(null);
 
   useEffect(() => {
     fetchArticles();
@@ -78,6 +85,24 @@ const KnowledgeBase = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const openCreateDialog = () => {
+    setEditingArticle(null);
+    setDialogMode('create');
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (article: KnowledgeArticle) => {
+    setEditingArticle(article);
+    setDialogMode('edit');
+    setDialogOpen(true);
+  };
+
+  const openViewDialog = (article: KnowledgeArticle) => {
+    setEditingArticle(article);
+    setDialogMode('view');
+    setDialogOpen(true);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -98,7 +123,10 @@ const KnowledgeBase = () => {
           <p className="text-sm text-muted-foreground">Branding voice responses and documentation</p>
         </div>
         {isAdmin && (
-          <Button className="bg-groovoo-gradient hover:opacity-90 glow-primary text-white">
+          <Button 
+            className="bg-groovoo-gradient hover:opacity-90 glow-primary text-white"
+            onClick={openCreateDialog}
+          >
             <Plus className="w-4 h-4 mr-2" />
             New Article
           </Button>
@@ -232,18 +260,29 @@ const KnowledgeBase = () => {
               <CardContent>
                 {selectedArticle ? (
                   <div className="space-y-4">
-                    <div>
-                      <h3 className="font-semibold text-lg mb-2">
-                        {selectedArticle.title}
-                      </h3>
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        <Badge variant="outline">{selectedArticle.category}</Badge>
-                        {selectedArticle.tags.map((tag) => (
-                          <Badge key={tag} variant="secondary" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg mb-2">
+                          {selectedArticle.title}
+                        </h3>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          <Badge variant="outline">{selectedArticle.category}</Badge>
+                          {selectedArticle.tags.map((tag) => (
+                            <Badge key={tag} variant="secondary" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
+                      {isAdmin && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditDialog(selectedArticle)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                     <Separator />
                     <ScrollArea className="h-[280px] md:h-[350px]">
@@ -286,6 +325,15 @@ const KnowledgeBase = () => {
           <p>No articles found. {isAdmin && 'Create your first article to get started.'}</p>
         </div>
       )}
+
+      {/* Article Dialog */}
+      <ArticleDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        mode={dialogMode}
+        article={editingArticle}
+        onSuccess={fetchArticles}
+      />
     </div>
   );
 };
