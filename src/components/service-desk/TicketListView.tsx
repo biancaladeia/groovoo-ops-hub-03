@@ -75,10 +75,10 @@ const TicketListView = ({ tickets, onStatusChange }: TicketListViewProps) => {
             </TableHeader>
             <TableBody>
               {tickets.map((ticket, index) => {
-                const timeOpen = calculateTimeOpen(ticket.createdAt);
+                const timeOpen = calculateTimeOpen(new Date(ticket.created_at));
                 const isOverdue = ticket.status !== 'Resolved' && 
                   ticket.status !== 'Closed' && 
-                  Date.now() - new Date(ticket.createdAt).getTime() > 24 * 60 * 60 * 1000;
+                  Date.now() - new Date(ticket.created_at).getTime() > 24 * 60 * 60 * 1000;
 
                 return (
                   <motion.tr
@@ -90,7 +90,7 @@ const TicketListView = ({ tickets, onStatusChange }: TicketListViewProps) => {
                   >
                     <TableCell>
                       <code className="text-xs bg-muted px-2 py-1 rounded">
-                        {ticket.ticketId}
+                        {ticket.ticket_number}
                       </code>
                     </TableCell>
                     <TableCell className="max-w-[250px]">
@@ -105,17 +105,17 @@ const TicketListView = ({ tickets, onStatusChange }: TicketListViewProps) => {
                       <Badge
                         variant="outline"
                         className={
-                          ticket.type === 'User'
+                          ticket.ticket_type === 'B2C'
                             ? 'border-info/50 text-info'
                             : 'border-primary/50 text-primary'
                         }
                       >
-                        {ticket.type === 'User' ? (
+                        {ticket.ticket_type === 'B2C' ? (
                           <User className="w-3 h-3 mr-1" />
                         ) : (
                           <Building2 className="w-3 h-3 mr-1" />
                         )}
-                        {ticket.type}
+                        {ticket.ticket_type}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -135,13 +135,9 @@ const TicketListView = ({ tickets, onStatusChange }: TicketListViewProps) => {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {ticket.assignee ? (
-                        <span className="text-sm">{ticket.assignee}</span>
-                      ) : (
-                        <span className="text-sm text-muted-foreground italic">
-                          Unassigned
-                        </span>
-                      )}
+                      <span className="text-sm text-muted-foreground italic">
+                        -
+                      </span>
                     </TableCell>
                     <TableCell>
                       <span
