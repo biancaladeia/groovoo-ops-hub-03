@@ -14,16 +14,301 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_date: string
+          event_name: string
+          fees_received: boolean
+          gateway: Database["public"]["Enums"]["gateway_type"]
+          gateway_fee: number
+          gross_sale: number
+          id: string
+          net_sale: number
+          payout_date: string
+          payout_executed: boolean
+          service_fee: number
+          status: Database["public"]["Enums"]["event_status"]
+          total_payout: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_date: string
+          event_name: string
+          fees_received?: boolean
+          gateway: Database["public"]["Enums"]["gateway_type"]
+          gateway_fee?: number
+          gross_sale?: number
+          id?: string
+          net_sale?: number
+          payout_date: string
+          payout_executed?: boolean
+          service_fee?: number
+          status?: Database["public"]["Enums"]["event_status"]
+          total_payout?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_date?: string
+          event_name?: string
+          fees_received?: boolean
+          gateway?: Database["public"]["Enums"]["gateway_type"]
+          gateway_fee?: number
+          gross_sale?: number
+          id?: string
+          net_sale?: number
+          payout_date?: string
+          payout_executed?: boolean
+          service_fee?: number
+          status?: Database["public"]["Enums"]["event_status"]
+          total_payout?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      knowledge_base: {
+        Row: {
+          category: string
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ticket_attachments: {
+        Row: {
+          file_name: string
+          file_type: string
+          file_url: string
+          id: string
+          ticket_id: string
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          file_name: string
+          file_type: string
+          file_url: string
+          id?: string
+          ticket_id: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          file_name?: string
+          file_type?: string
+          file_url?: string
+          id?: string
+          ticket_id?: string
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_attachments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tickets: {
+        Row: {
+          assignee_id: string | null
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          move_to_backlog: boolean
+          platform: Database["public"]["Enums"]["platform_type"] | null
+          priority: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["ticket_status"]
+          subject: string
+          ticket_number: string
+          ticket_type: Database["public"]["Enums"]["ticket_type"]
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          move_to_backlog?: boolean
+          platform?: Database["public"]["Enums"]["platform_type"] | null
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          subject: string
+          ticket_number: string
+          ticket_type: Database["public"]["Enums"]["ticket_type"]
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          move_to_backlog?: boolean
+          platform?: Database["public"]["Enums"]["platform_type"] | null
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          subject?: string
+          ticket_number?: string
+          ticket_type?: Database["public"]["Enums"]["ticket_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_payout_date: { Args: { event_date: string }; Returns: string }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: never; Returns: boolean }
+      is_authenticated_user: { Args: never; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "staff"
+      event_status: "Available" | "Expired" | "Unavailable" | "Finished"
+      gateway_type:
+        | "Groovoo Square"
+        | "Groovoo Stripe"
+        | "Split Stripe"
+        | "Organizer Square"
+        | "Organizer Stripe"
+      platform_type: "iOS" | "Android" | "Web"
+      ticket_priority: "High" | "Medium" | "Low"
+      ticket_status: "Open" | "In Progress" | "Waiting" | "Resolved" | "Closed"
+      ticket_type: "B2C" | "B2B"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +435,20 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "staff"],
+      event_status: ["Available", "Expired", "Unavailable", "Finished"],
+      gateway_type: [
+        "Groovoo Square",
+        "Groovoo Stripe",
+        "Split Stripe",
+        "Organizer Square",
+        "Organizer Stripe",
+      ],
+      platform_type: ["iOS", "Android", "Web"],
+      ticket_priority: ["High", "Medium", "Low"],
+      ticket_status: ["Open", "In Progress", "Waiting", "Resolved", "Closed"],
+      ticket_type: ["B2C", "B2B"],
+    },
   },
 } as const
