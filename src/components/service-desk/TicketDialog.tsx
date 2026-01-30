@@ -311,8 +311,8 @@ export const TicketDialog = ({
                   <FormItem>
                     <FormLabel>Platform</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
-                      value={field.value || ''}
+                      onValueChange={(value) => field.onChange(value === 'none' ? null : value)}
+                      value={field.value || 'none'}
                       disabled={isViewOnly}
                     >
                       <FormControl>
@@ -321,7 +321,7 @@ export const TicketDialog = ({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         {PLATFORMS.map((platform) => (
                           <SelectItem key={platform} value={platform}>
                             {platform}
