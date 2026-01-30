@@ -13,6 +13,7 @@ import ServiceDesk from "./pages/ServiceDesk";
 import GitHubQA from "./pages/GitHubQA";
 import AuditLog from "./pages/AuditLog";
 import KnowledgeBase from "./pages/KnowledgeBase";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="github-qa" element={<GitHubQA />} />
               <Route path="audit" element={<AuditLog />} />
               <Route path="wiki" element={<KnowledgeBase />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
