@@ -55,6 +55,7 @@ const eventFormSchema = z.object({
   gross_sale: z.coerce.number().min(0, 'Must be positive'),
   service_fee: z.coerce.number().min(0, 'Must be positive'),
   gateway_fee: z.coerce.number().min(0, 'Must be positive'),
+  processing_fee: z.coerce.number().min(0, 'Must be positive'),
 });
 
 type EventFormValues = z.infer<typeof eventFormSchema>;
@@ -90,18 +91,20 @@ export const EventDialog = ({
       gross_sale: 0,
       service_fee: 0,
       gateway_fee: 0,
+      processing_fee: 0,
     },
   });
 
   // Watch values for real-time calculations
-  const watchedValues = form.watch(['gross_sale', 'service_fee', 'gateway_fee', 'event_date']);
+  const watchedValues = form.watch(['gross_sale', 'service_fee', 'gateway_fee', 'processing_fee', 'event_date']);
   const grossSale = Number(watchedValues[0]) || 0;
   const serviceFee = Number(watchedValues[1]) || 0;
   const gatewayFee = Number(watchedValues[2]) || 0;
-  const eventDate = watchedValues[3];
+  const processingFee = Number(watchedValues[3]) || 0;
+  const eventDate = watchedValues[4];
 
   // Calculated fields
-  const netSale = useMemo(() => grossSale - serviceFee - gatewayFee, [grossSale, serviceFee, gatewayFee]);
+  const netSale = useMemo(() => grossSale - serviceFee - gatewayFee - processingFee, [grossSale, serviceFee, gatewayFee, processingFee]);
   const totalPayout = useMemo(() => netSale, [netSale]);
   const payoutDate = useMemo(() => eventDate ? calculatePayoutDate(eventDate) : null, [eventDate]);
 
@@ -117,6 +120,7 @@ export const EventDialog = ({
           gross_sale: Number(event.gross_sale),
           service_fee: Number(event.service_fee),
           gateway_fee: Number(event.gateway_fee),
+          processing_fee: Number(event.processing_fee || 0),
         });
       } else {
         form.reset({
@@ -127,6 +131,7 @@ export const EventDialog = ({
           gross_sale: 0,
           service_fee: 0,
           gateway_fee: 0,
+          processing_fee: 0,
         });
       }
     }
@@ -146,6 +151,7 @@ export const EventDialog = ({
         gross_sale: values.gross_sale,
         service_fee: values.service_fee,
         gateway_fee: values.gateway_fee,
+        processing_fee: values.processing_fee,
         net_sale: netSale,
         total_payout: totalPayout,
       };
@@ -325,7 +331,7 @@ export const EventDialog = ({
             </div>
 
             {/* Financial Fields */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="gross_sale"
@@ -389,6 +395,27 @@ export const EventDialog = ({
                 )}
               />
 
+              <FormField
+                control={form.control}
+                name="processing_fee"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Processing Fee</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        {...field}
+                        disabled={isViewOnly}
+                        placeholder="0.00"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* Net Sale (Calculated) */}
               <FormItem>
                 <FormLabel>Net Sale</FormLabel>
@@ -403,7 +430,7 @@ export const EventDialog = ({
                 <span className="text-xl font-bold text-primary">{formatCurrency(totalPayout)}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Gross Sale - Service Fee - Gateway Fee
+                Gross Sale - Service Fee - Gateway Fee - Processing Fee
               </p>
             </div>
 

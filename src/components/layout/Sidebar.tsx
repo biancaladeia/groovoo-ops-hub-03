@@ -101,19 +101,17 @@ const Sidebar = () => {
                       isActive && 'text-primary'
                     )}
                   />
-                  <AnimatePresence>
-                    {!collapsed && (
+                  {!collapsed && (
                       <motion.span
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        initial={{ opacity: 0, width: 0 }}
+                        animate={{ opacity: 1, width: 'auto' }}
+                        exit={{ opacity: 0, width: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="truncate"
+                        className="truncate overflow-hidden whitespace-nowrap"
                       >
                         {item.label}
                       </motion.span>
                     )}
-                  </AnimatePresence>
                   {isActive && !collapsed && (
                     <motion.div
                       layoutId="activeIndicator"

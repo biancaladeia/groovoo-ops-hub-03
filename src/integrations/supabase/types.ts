@@ -64,6 +64,7 @@ export type Database = {
           net_sale: number
           payout_date: string
           payout_executed: boolean
+          processing_fee: number
           service_fee: number
           status: Database["public"]["Enums"]["event_status"]
           total_payout: number
@@ -82,6 +83,7 @@ export type Database = {
           net_sale?: number
           payout_date: string
           payout_executed?: boolean
+          processing_fee?: number
           service_fee?: number
           status?: Database["public"]["Enums"]["event_status"]
           total_payout?: number
@@ -100,6 +102,7 @@ export type Database = {
           net_sale?: number
           payout_date?: string
           payout_executed?: boolean
+          processing_fee?: number
           service_fee?: number
           status?: Database["public"]["Enums"]["event_status"]
           total_payout?: number
