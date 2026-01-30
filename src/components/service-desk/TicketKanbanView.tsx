@@ -11,10 +11,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Ticket, TicketStatus, TicketPriority } from '@/types';
 import { calculateTimeOpen } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TicketKanbanViewProps {
   tickets: Ticket[];
   onStatusChange: (ticketId: string, status: TicketStatus) => void;
+  onViewTicket: (ticket: Ticket) => void;
+  onEditTicket: (ticket: Ticket) => void;
 }
 
 const columns: { status: TicketStatus; title: string; color: string }[] = [
@@ -31,7 +34,9 @@ const priorityConfig: Record<TicketPriority, string> = {
   Low: 'priority-low',
 };
 
-const TicketKanbanView = ({ tickets, onStatusChange }: TicketKanbanViewProps) => {
+const TicketKanbanView = ({ tickets, onStatusChange, onViewTicket, onEditTicket }: TicketKanbanViewProps) => {
+  const { isAdmin } = useAuth();
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
       {columns.map((column) => {
@@ -53,14 +58,17 @@ const TicketKanbanView = ({ tickets, onStatusChange }: TicketKanbanViewProps) =>
             <CardContent className="p-2 flex-1 overflow-hidden">
               <ScrollArea className="h-full pr-2">
                 <div className="space-y-3">
-                  {columnTickets.map((ticket, index) => (
-                    <TicketCard
-                      key={ticket.id}
-                      ticket={ticket}
-                      index={index}
-                      onStatusChange={onStatusChange}
-                    />
-                  ))}
+                    {columnTickets.map((ticket, index) => (
+                      <TicketCard
+                        key={ticket.id}
+                        ticket={ticket}
+                        index={index}
+                        onStatusChange={onStatusChange}
+                        onViewTicket={onViewTicket}
+                        onEditTicket={onEditTicket}
+                        isAdmin={isAdmin}
+                      />
+                    ))}
                   {columnTickets.length === 0 && (
                     <div className="text-center text-muted-foreground text-sm py-8">
                       No tickets
@@ -80,10 +88,16 @@ const TicketCard = ({
   ticket,
   index,
   onStatusChange,
+  onViewTicket,
+  onEditTicket,
+  isAdmin,
 }: {
   ticket: Ticket;
   index: number;
   onStatusChange: (ticketId: string, status: TicketStatus) => void;
+  onViewTicket: (ticket: Ticket) => void;
+  onEditTicket: (ticket: Ticket) => void;
+  isAdmin: boolean;
 }) => {
   const timeOpen = calculateTimeOpen(new Date(ticket.created_at));
   const isOverdue =
@@ -91,12 +105,21 @@ const TicketCard = ({
     ticket.status !== 'Closed' &&
     Date.now() - new Date(ticket.created_at).getTime() > 24 * 60 * 60 * 1000;
 
+  const handleClick = () => {
+    if (isAdmin) {
+      onEditTicket(ticket);
+    } else {
+      onViewTicket(ticket);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       className="p-3 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors cursor-pointer border border-border/50 hover:border-primary/30"
+      onClick={handleClick}
       draggable
     >
       {/* Header */}

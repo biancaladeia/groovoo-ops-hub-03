@@ -12,6 +12,7 @@ export interface Event {
   gross_sale: number;
   service_fee: number;
   gateway_fee: number;
+  processing_fee: number;
   net_sale: number;
   total_payout: number;
   payout_executed: boolean;

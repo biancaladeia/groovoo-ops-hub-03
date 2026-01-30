@@ -124,6 +124,18 @@ const ServiceDesk = () => {
     setDialogOpen(true);
   };
 
+  const openViewDialog = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+    setDialogMode('view');
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = (ticket: Ticket) => {
+    setSelectedTicket(ticket);
+    setDialogMode('edit');
+    setDialogOpen(true);
+  };
+
   // Stats
   const openCount = tickets.filter((t) => t.status === 'Open').length;
   const inProgressCount = tickets.filter((t) => t.status === 'In Progress').length;
@@ -297,7 +309,12 @@ const ServiceDesk = () => {
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.2 }}
           >
-            <TicketListView tickets={filteredTickets} onStatusChange={handleStatusChange} />
+            <TicketListView 
+              tickets={filteredTickets} 
+              onStatusChange={handleStatusChange}
+              onViewTicket={openViewDialog}
+              onEditTicket={openEditDialog}
+            />
           </motion.div>
         ) : (
           <motion.div
@@ -307,7 +324,12 @@ const ServiceDesk = () => {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.2 }}
           >
-            <TicketKanbanView tickets={filteredTickets} onStatusChange={handleStatusChange} />
+            <TicketKanbanView 
+              tickets={filteredTickets} 
+              onStatusChange={handleStatusChange}
+              onViewTicket={openViewDialog}
+              onEditTicket={openEditDialog}
+            />
           </motion.div>
         )}
       </AnimatePresence>

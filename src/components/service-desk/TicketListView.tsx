@@ -26,10 +26,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Ticket, TicketStatus, TicketPriority } from '@/types';
 import { calculateTimeOpen, formatDateTime } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TicketListViewProps {
   tickets: Ticket[];
   onStatusChange: (ticketId: string, status: TicketStatus) => void;
+  onViewTicket: (ticket: Ticket) => void;
+  onEditTicket: (ticket: Ticket) => void;
 }
 
 const priorityConfig: Record<TicketPriority, string> = {
@@ -46,7 +49,9 @@ const statusConfig: Record<TicketStatus, { color: string; bgColor: string }> = {
   Closed: { color: 'text-muted-foreground', bgColor: 'bg-muted' },
 };
 
-const TicketListView = ({ tickets, onStatusChange }: TicketListViewProps) => {
+const TicketListView = ({ tickets, onStatusChange, onViewTicket, onEditTicket }: TicketListViewProps) => {
+  const { isAdmin } = useAuth();
+  
   return (
     <Card className="glass-card overflow-hidden">
       <CardHeader className="pb-0">
@@ -156,10 +161,15 @@ const TicketListView = ({ tickets, onStatusChange }: TicketListViewProps) => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onViewTicket(ticket)}>
                             <ExternalLink className="w-4 h-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
+                          {isAdmin && (
+                            <DropdownMenuItem onClick={() => onEditTicket(ticket)}>
+                              Edit Ticket
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => onStatusChange(ticket.id, 'Open')}>
                             Set to Open
