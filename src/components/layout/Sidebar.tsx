@@ -101,17 +101,19 @@ const Sidebar = () => {
                       isActive && 'text-primary'
                     )}
                   />
-                  {!collapsed && (
+                  <AnimatePresence mode="wait">
+                    {!collapsed && (
                       <motion.span
                         initial={{ opacity: 0, width: 0 }}
                         animate={{ opacity: 1, width: 'auto' }}
                         exit={{ opacity: 0, width: 0 }}
-                        transition={{ duration: 0.2 }}
+                        transition={{ duration: 0.15 }}
                         className="truncate overflow-hidden whitespace-nowrap"
                       >
                         {item.label}
                       </motion.span>
                     )}
+                  </AnimatePresence>
                   {isActive && !collapsed && (
                     <motion.div
                       layoutId="activeIndicator"
@@ -140,7 +142,19 @@ const Sidebar = () => {
               onClick={() => navigate('/dashboard/settings')}
             >
               <Settings className="w-5 h-5 flex-shrink-0" />
-              {!collapsed && <span>Settings</span>}
+              <AnimatePresence mode="wait">
+                {!collapsed && (
+                  <motion.span
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="overflow-hidden whitespace-nowrap"
+                  >
+                    Settings
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </Button>
           </TooltipTrigger>
           {collapsed && (
@@ -156,7 +170,19 @@ const Sidebar = () => {
               onClick={handleLogout}
             >
               <LogOut className="w-5 h-5 flex-shrink-0" />
-              {!collapsed && <span>Logout</span>}
+              <AnimatePresence mode="wait">
+                {!collapsed && (
+                  <motion.span
+                    initial={{ opacity: 0, width: 0 }}
+                    animate={{ opacity: 1, width: 'auto' }}
+                    exit={{ opacity: 0, width: 0 }}
+                    transition={{ duration: 0.15 }}
+                    className="overflow-hidden whitespace-nowrap"
+                  >
+                    Logout
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </Button>
           </TooltipTrigger>
           {collapsed && (

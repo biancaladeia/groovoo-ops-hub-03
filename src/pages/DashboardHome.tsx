@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   TrendingUp, 
@@ -7,93 +8,151 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock,
-  ArrowUpRight
+  ArrowUpRight,
+  Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
+import { formatCurrency, formatDate } from '@/lib/utils';
+import { AuditLog } from '@/types';
+import { formatDistanceToNow } from 'date-fns';
 
-const stats = [
-  {
-    title: 'Total Gross Sales',
-    value: '$124,580',
-    change: '+12.5%',
-    trend: 'up',
-    icon: DollarSign,
-  },
-  {
-    title: 'Active Events',
-    value: '23',
-    change: '+3 this week',
-    trend: 'up',
-    icon: CalendarDays,
-  },
-  {
-    title: 'Open Tickets',
-    value: '47',
-    change: '12 high priority',
-    trend: 'neutral',
-    icon: Ticket,
-  },
-  {
-    title: 'Pending Payouts',
-    value: '$45,230',
-    change: '8 events',
-    trend: 'neutral',
-    icon: TrendingUp,
-  },
-];
+interface DashboardStats {
+  totalGrossSales: number;
+  activeEventsCount: number;
+  openTicketsCount: number;
+  highPriorityTicketsCount: number;
+  pendingPayoutsTotal: number;
+  pendingPayoutsCount: number;
+  resolvedTicketsMTD: number;
+}
 
-const recentActivity = [
-  {
-    id: 1,
-    type: 'payout',
-    title: 'Payout Executed',
-    description: 'Summer Fest 2025 - $12,450',
-    time: '2 hours ago',
-    icon: CheckCircle2,
-    iconColor: 'text-success',
-  },
-  {
-    id: 2,
-    type: 'ticket',
-    title: 'High Priority Ticket',
-    description: 'TKT-A1B2C - Duplicate charge reported',
-    time: '4 hours ago',
-    icon: AlertCircle,
-    iconColor: 'text-destructive',
-  },
-  {
-    id: 3,
-    type: 'event',
-    title: 'Event Created',
-    description: 'Beach Party Night - Apr 15, 2025',
-    time: '6 hours ago',
-    icon: CalendarDays,
-    iconColor: 'text-primary',
-  },
-  {
-    id: 4,
-    type: 'ticket',
-    title: 'Ticket Resolved',
-    description: 'TKT-X7Y8Z - Login issue fixed',
-    time: '8 hours ago',
-    icon: CheckCircle2,
-    iconColor: 'text-success',
-  },
-];
-
-const upcomingPayouts = [
-  { event: 'Jazz Night Downtown', date: 'Feb 1, 2025', amount: '$8,750' },
-  { event: 'Tech Conference 2025', date: 'Feb 3, 2025', amount: '$24,200' },
-  { event: 'Comedy Club Special', date: 'Feb 5, 2025', amount: '$3,890' },
-];
+interface UpcomingPayout {
+  event_name: string;
+  payout_date: string;
+  total_payout: number;
+}
 
 const DashboardHome = () => {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentActivity, setRecentActivity] = useState<AuditLog[]>([]);
+  const [upcomingPayouts, setUpcomingPayouts] = useState<UpcomingPayout[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch events for stats
+      const { data: events } = await supabase.from('events').select('*');
+      
+      // Fetch tickets for stats
+      const { data: tickets } = await supabase.from('tickets').select('*');
+      
+      // Fetch recent audit logs
+      const { data: auditLogs } = await supabase
+        .from('audit_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      // Fetch upcoming payouts (events not yet paid out)
+      const { data: pendingEvents } = await supabase
+        .from('events')
+        .select('event_name, payout_date, total_payout')
+        .eq('payout_executed', false)
+        .order('payout_date', { ascending: true })
+        .limit(3);
+
+      // Calculate stats
+      const finishedEvents = events?.filter(e => e.status === 'Finished') || [];
+      const availableEvents = events?.filter(e => e.status === 'Available') || [];
+      const unpaidEvents = events?.filter(e => !e.payout_executed) || [];
+      const openTickets = tickets?.filter(t => t.status === 'Open') || [];
+      const highPriorityOpen = tickets?.filter(t => t.priority === 'High' && t.status !== 'Closed' && t.status !== 'Resolved') || [];
+      
+      // Calculate month-to-date resolved tickets
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      const resolvedMTD = tickets?.filter(t => 
+        (t.status === 'Resolved' || t.status === 'Closed') && 
+        new Date(t.resolved_at || t.updated_at) >= startOfMonth
+      ) || [];
+
+      setStats({
+        totalGrossSales: finishedEvents.reduce((sum, e) => sum + Number(e.net_sale || 0), 0),
+        activeEventsCount: availableEvents.length,
+        openTicketsCount: openTickets.length,
+        highPriorityTicketsCount: highPriorityOpen.length,
+        pendingPayoutsTotal: unpaidEvents.reduce((sum, e) => sum + Number(e.total_payout || 0), 0),
+        pendingPayoutsCount: unpaidEvents.length,
+        resolvedTicketsMTD: resolvedMTD.length,
+      });
+
+      setRecentActivity(auditLogs || []);
+      setUpcomingPayouts(pendingEvents || []);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const statsCards = [
+    {
+      title: 'Total Net Sales',
+      value: formatCurrency(stats?.totalGrossSales || 0),
+      change: 'Finished events',
+      trend: 'up',
+      icon: DollarSign,
+    },
+    {
+      title: 'Active Events',
+      value: stats?.activeEventsCount.toString() || '0',
+      change: 'Currently available',
+      trend: 'up',
+      icon: CalendarDays,
+    },
+    {
+      title: 'Open Tickets',
+      value: stats?.openTicketsCount.toString() || '0',
+      change: `${stats?.highPriorityTicketsCount || 0} high priority`,
+      trend: 'neutral',
+      icon: Ticket,
+    },
+    {
+      title: 'Pending Payouts',
+      value: formatCurrency(stats?.pendingPayoutsTotal || 0),
+      change: `${stats?.pendingPayoutsCount || 0} events`,
+      trend: 'neutral',
+      icon: TrendingUp,
+    },
+  ];
+
+  const getActivityIcon = (action: string) => {
+    if (action.toLowerCase().includes('payout')) return { icon: CheckCircle2, color: 'text-success' };
+    if (action.toLowerCase().includes('ticket')) return { icon: AlertCircle, color: 'text-warning' };
+    if (action.toLowerCase().includes('event')) return { icon: CalendarDays, color: 'text-primary' };
+    return { icon: Clock, color: 'text-muted-foreground' };
+  };
+
   return (
     <div className="space-y-6">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => {
+        {statsCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <motion.div
@@ -102,7 +161,7 @@ const DashboardHome = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="glass-card glow-hover">
+              <Card className="clean-card glow-hover">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div>
@@ -135,7 +194,7 @@ const DashboardHome = () => {
           transition={{ delay: 0.4 }}
           className="lg:col-span-2"
         >
-          <Card className="glass-card h-full">
+          <Card className="clean-card h-full">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Clock className="w-5 h-5 text-primary" />
@@ -143,28 +202,34 @@ const DashboardHome = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {recentActivity.map((activity) => {
-                const Icon = activity.icon;
-                return (
-                  <div
-                    key={activity.id}
-                    className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className={`w-8 h-8 rounded-lg bg-muted flex items-center justify-center ${activity.iconColor}`}>
-                      <Icon className="w-4 h-4" />
+              {recentActivity.length === 0 ? (
+                <div className="text-center text-muted-foreground py-8">
+                  No recent activity
+                </div>
+              ) : (
+                recentActivity.map((activity) => {
+                  const { icon: Icon, color } = getActivityIcon(activity.action);
+                  return (
+                    <div
+                      key={activity.id}
+                      className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                    >
+                      <div className={`w-8 h-8 rounded-lg bg-muted flex items-center justify-center ${color}`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">{activity.action}</p>
+                        <p className="text-sm text-muted-foreground truncate">
+                          {activity.entity_type}: {activity.entity_id.slice(0, 8)}...
+                        </p>
+                      </div>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
+                      </span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm">{activity.title}</p>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {activity.description}
-                      </p>
-                    </div>
-                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                      {activity.time}
-                    </span>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -175,7 +240,7 @@ const DashboardHome = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <Card className="glass-card h-full">
+          <Card className="clean-card h-full">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-primary" />
@@ -183,20 +248,28 @@ const DashboardHome = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {upcomingPayouts.map((payout, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
-                >
-                  <div>
-                    <p className="font-medium text-sm">{payout.event}</p>
-                    <p className="text-xs text-muted-foreground">{payout.date}</p>
-                  </div>
-                  <Badge variant="secondary" className="bg-primary/20 text-primary">
-                    {payout.amount}
-                  </Badge>
+              {upcomingPayouts.length === 0 ? (
+                <div className="text-center text-muted-foreground py-8">
+                  No pending payouts
                 </div>
-              ))}
+              ) : (
+                upcomingPayouts.map((payout, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30"
+                  >
+                    <div>
+                      <p className="font-medium text-sm">{payout.event_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(new Date(payout.payout_date))}
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="bg-primary/20 text-primary">
+                      {formatCurrency(Number(payout.total_payout))}
+                    </Badge>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -208,24 +281,32 @@ const DashboardHome = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
       >
-        <Card className="glass-card">
+        <Card className="clean-card">
           <CardContent className="p-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <div className="text-center">
-                <p className="text-3xl font-bold text-success">89%</p>
-                <p className="text-sm text-muted-foreground">SLA Compliance</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-bold text-primary">156</p>
+                <p className="text-3xl font-bold text-success">
+                  {stats?.resolvedTicketsMTD || 0}
+                </p>
                 <p className="text-sm text-muted-foreground">Tickets Resolved (MTD)</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-bold text-warning">4.2h</p>
-                <p className="text-sm text-muted-foreground">Avg Response Time</p>
+                <p className="text-3xl font-bold text-primary">
+                  {stats?.activeEventsCount || 0}
+                </p>
+                <p className="text-sm text-muted-foreground">Active Events</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-bold text-info">98.5%</p>
-                <p className="text-sm text-muted-foreground">Customer Satisfaction</p>
+                <p className="text-3xl font-bold text-warning">
+                  {stats?.highPriorityTicketsCount || 0}
+                </p>
+                <p className="text-sm text-muted-foreground">High Priority Open</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-info">
+                  {stats?.pendingPayoutsCount || 0}
+                </p>
+                <p className="text-sm text-muted-foreground">Pending Payouts</p>
               </div>
             </div>
           </CardContent>
